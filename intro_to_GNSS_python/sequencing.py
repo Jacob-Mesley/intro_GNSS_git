@@ -92,3 +92,21 @@ def cyc_corr_basic(x, y):
 # negative number means an advance (shift left)
 def shift_and_wrap_array(array_to_shift, number_to_shift_by):
     return np.roll(array_to_shift, number_to_shift_by)
+
+
+def extract_rows_by_index(matrix, index, chunk_size=32):
+    """
+    Extracts the same row index from each chunk of rows in a 2D array.
+
+    Args:
+        matrix (np.ndarray): Input 2D array of shape (N, M).
+        index (int): Row index to extract within each chunk.
+        chunk_size (int): Number of rows per chunk (default=32).
+
+    Returns:
+        np.ndarray: New 2D array containing the extracted rows.
+    """
+    n_chunks = matrix.shape[0] // chunk_size
+    extracted = [matrix[i*chunk_size + index] for i in range(n_chunks)]
+    return np.array(extracted)
+

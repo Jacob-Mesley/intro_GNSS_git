@@ -1,0 +1,2 @@
+Site Name,Country/Region,Receiver,Antenna,Radome,Satellite System,Latitude,Longitude,Height (m),X (m),Y (m),Z (m),Calibration,Networks,Data Center,IERS DOMES,Clock,Agencies,Last Data
+NIST00USA,US,SEPT POLARX5TR,NOV750.R4,NONE,GPS+GLO+GAL+BDS+QZSS+SBAS,39.99506666666666,-105.2626056,1648.353,-1288398.567,-4721696.932,4078625.350,ROBOT,"IGS, IGS Multi-GNSS, IGS14, IGS20",JPL,49507M002,EXTERNAL H-MASER,National Institute of Standards and Technology,1
