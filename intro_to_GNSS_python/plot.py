@@ -10,8 +10,45 @@ import numpy as np
 
 # simple plotting function given two arrays
 def plot_arrays(x_data, y_data, x_axis_title="x-axis", y_axis_title="y-axis", title="plot title"):
-    plt.figure()
+    plt.figure(figsize=(12, 4))
     plt.plot(x_data, y_data)
+    plt.grid(True)
+    plt.xlabel(x_axis_title)
+    plt.ylabel(y_axis_title)
+    plt.title(title)
+    plt.tight_layout()
+
+
+import matplotlib.pyplot as plt
+import itertools
+
+
+def plot_multiple_arrays(x_data, y_data_matrix, x_axis_title="x-axis", y_axis_title="y-axis", title="plot title", labels=None):
+    rows, cols = y_data_matrix.shape
+    # Make figure wide
+    plt.figure(figsize=(12, 4))
+    # Define line styles to cycle through
+    line_styles = ['-', '--', '-.', ':']
+    style_cycle = itertools.cycle(line_styles)
+    for i in range(cols):
+        style = next(style_cycle)
+        if labels is not None and i < len(labels):
+            plt.plot(x_data, y_data_matrix[:, i], linestyle=style, label=labels[i])
+        else:
+            plt.plot(x_data, y_data_matrix[:, i], linestyle=style)
+    plt.grid(True)
+    plt.xlabel(x_axis_title)
+    plt.ylabel(y_axis_title)
+    plt.title(title)
+    if labels is not None:
+        plt.legend()
+    plt.tight_layout()
+
+
+def scatter_arrays(x_data, y_data, x_axis_title="x-axis", y_axis_title="y-axis", title="plot title"):
+    plt.figure(figsize=(12, 2))
+    plt.figure()
+    plt.scatter(x_data, y_data)
     plt.grid(True)
     plt.xlabel(x_axis_title)
     plt.ylabel(y_axis_title)
@@ -22,7 +59,7 @@ def plot_arrays(x_data, y_data, x_axis_title="x-axis", y_axis_title="y-axis", ti
 def subplot_arrays(x_data_array, y_data_matrix, x_axis_label, y_axis_labels, title="plot title"):
     rows, cols = y_data_matrix.shape
     # create the subplots
-    fig, axs = plt.subplots(cols, 1, figsize=(8, 2 * cols), sharex=True)
+    fig, axs = plt.subplots(cols, 1, figsize=(12, 1.5 * cols), sharex=True)
     axs = np.atleast_1d(axs)  # ensure axs is iterable even if rows==1
     for i in range(cols):
         axs[i].scatter(x_data_array, y_data_matrix[:, i])
@@ -31,7 +68,6 @@ def subplot_arrays(x_data_array, y_data_matrix, x_axis_label, y_axis_labels, tit
     # Final formatting
     axs[0].set_title(title)
     axs[-1].set_xlabel(x_axis_label)
-    axs[i].set_xlim(np.min(x_data_array)-1, np.max(x_data_array)+1)
     plt.tight_layout()
     return fig, axs
 

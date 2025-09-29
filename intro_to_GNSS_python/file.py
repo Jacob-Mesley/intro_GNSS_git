@@ -152,3 +152,150 @@ def read_GPSyuma(yuma_filename, rollovers=0):
     gps_alm = np.array(gps_alm)
     return gps_alm, gps_alm_cell
 
+
+def read_clean_GPSbroadcast(navfilename, clean=False):
+    """
+    Reads an IGS GPS Broadcast Ephemeris (RINEX nav file) and constructs a matrix
+    of ephemeris values. Optionally cleans bad ephemerides.
+
+    Parameters
+    ----------
+    navfilename : str
+        Path to the IGS broadcast ephemeris file (.nav).
+    clean : bool, optional
+        Whether to clean incorrect entries. Default = False.
+
+    Returns
+    -------
+    gps_ephem : ndarray (n, 25)
+        Broadcast ephemeris values:
+          col1:  prn
+          col2:  M0
+          col3:  delta_n
+          col4:  ecc
+          col5:  sqrt_a
+          col6:  Loa
+          col7:  incl
+          col8:  perigee
+          col9:  ra_rate
+          col10: i_rate
+          col11: Cuc
+          col12: Cus
+          col13: Crc
+          col14: Crs
+          col15: Cic
+          col16: Cis
+          col17: Toe
+          col18: IODE
+          col19: GPS_week
+          col20: Toc
+          col21: Af0
+          col22: Af1
+          col23: Af2
+          col24: TGD
+          col25: health
+
+    ionoparams : ndarray (8,)
+        Klobuchar ionospheric parameters [A0 A1 A2 A3 B0 B1 B2 B3].
+    """
+    gps_ephem = []
+    ALPHA, BETA = None, None
+
+    with open(navfilename, 'r') as f:
+        # --- Parse header ---
+        while True:
+            line = f.readline()
+            if not line:
+                raise ValueError("File ended before END OF HEADER.")
+            if "ION ALPHA" in line:
+                parts = line.split()[:4]
+                ALPHA = [float(x.replace('D', 'E')) for x in parts]
+            if "ION BETA" in line:
+                parts = line.split()[:4]
+                BETA = [float(x.replace('D', 'E')) for x in parts]
+            if "END OF HEADER" in line:
+                break
+
+        ionoparams = np.array(ALPHA + BETA if (ALPHA and BETA) else [])
+
+        # --- Parse ephemeris blocks ---
+        while True:
+            line = f.readline()
+            if not line:
+                break
+
+            if not line.strip():
+                continue
+
+            prn = int(line[0:2])
+            Af0 = float(line[22:41].replace('D', 'E'))
+            Af1 = float(line[41:60].replace('D', 'E'))
+            Af2 = float(line[60:79].replace('D', 'E'))
+
+            # line 2
+            line = f.readline()
+            IODE = float(line[3:22].replace('D', 'E'))
+            Crs = float(line[22:41].replace('D', 'E'))
+            delta_n = float(line[41:60].replace('D', 'E'))
+            M0 = float(line[60:79].replace('D', 'E'))
+
+            # line 3
+            line = f.readline()
+            Cuc = float(line[3:22].replace('D', 'E'))
+            ecc = float(line[22:41].replace('D', 'E'))
+            Cus = float(line[41:60].replace('D', 'E'))
+            sqrt_a = float(line[60:79].replace('D', 'E'))
+
+            # line 4
+            line = f.readline()
+            Toe = float(line[3:22].replace('D', 'E'))
+            Toc = Toe
+            Cic = float(line[22:41].replace('D', 'E'))
+            Loa = float(line[41:60].replace('D', 'E'))
+            Cis = float(line[60:79].replace('D', 'E'))
+
+            # line 5
+            line = f.readline()
+            incl = float(line[3:22].replace('D', 'E'))
+            Crc = float(line[22:41].replace('D', 'E'))
+            perigee = float(line[41:60].replace('D', 'E'))
+            ra_rate = float(line[60:79].replace('D', 'E'))
+
+            # line 6
+            line = f.readline()
+            i_rate = float(line[3:22].replace('D', 'E'))
+            GPS_week = int(float(line[41:60].replace('D', 'E')))
+            if GPS_week < 1024:
+                GPS_week += 2048
+
+            # line 7
+            line = f.readline()
+            health = float(line[22:41].replace('D', 'E'))
+            TGD = float(line[41:60].replace('D', 'E'))
+
+            # line 8 (skip)
+            f.readline()
+
+            gps_ephem.append([
+                prn, M0, delta_n, ecc, sqrt_a, Loa, incl, perigee,
+                ra_rate, i_rate, Cuc, Cus, Crc, Crs, Cic, Cis, Toe,
+                IODE, GPS_week, Toc, Af0, Af1, Af2, TGD, health
+            ])
+
+    gps_ephem = np.array(gps_ephem)
+
+    # --- Optional cleaning ---
+    if clean and gps_ephem.size > 0:
+        badrows = []
+        for prn in np.unique(gps_ephem[:, 0]):
+            sat_ephem_idx = np.where(gps_ephem[:, 0] == prn)[0]
+            sat_ephem = gps_ephem[sat_ephem_idx, :]
+            newuploads = np.where(sat_ephem[:, 16] % 3600 != 0)[0]  # Toe in col 17 -> index 16
+            for idx in newuploads:
+                if idx < len(sat_ephem) - 1:
+                    if (sat_ephem[idx + 1, 16] - sat_ephem[idx, 16]) < 240:
+                        badrows.append(sat_ephem_idx[idx + 1])
+        gps_ephem = np.delete(gps_ephem, badrows, axis=0)
+
+    return gps_ephem, ionoparams
+

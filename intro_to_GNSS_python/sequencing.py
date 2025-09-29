@@ -110,3 +110,13 @@ def extract_rows_by_index(matrix, index, chunk_size=32):
     extracted = [matrix[i*chunk_size + index] for i in range(n_chunks)]
     return np.array(extracted)
 
+
+def extract_PRN_from_sp3_data(sp3_data, PRN_num):
+    PRN_num = float(PRN_num)
+    mask = sp3_data[:, 2].astype(str) == str(PRN_num)
+    return sp3_data[mask]
+
+def extract_PRN_from_ephem(ephem_data, PRN_num):
+    PRN_num = float(PRN_num)
+    mask = ephem_data[:, 0].astype(str) == str(PRN_num)
+    return ephem_data[mask]

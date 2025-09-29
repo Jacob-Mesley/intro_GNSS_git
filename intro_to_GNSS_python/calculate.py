@@ -77,7 +77,7 @@ def az_el_range(user_ECEF, sat_ECEF, only_when_visible=True):
         # append the calculations to the results matrix
         # if the el (as measured in the ENU frame) is ever < 0 (meaning it's now below the horizon), store Nones
         if only_when_visible and el < 0:
-            results[i] = np.array((None, None, None))
+            results[i] = np.array((np.nan, np.nan, np.nan))
         # if is visible (or function is told not to care)
         else:
             results[i] = [az, el, rng]
