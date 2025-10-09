@@ -84,6 +84,10 @@ for j in range(5):
 expected_range = R
 old_range = az_el_range_PRN[:, 2]
 R_diff = old_range - expected_range
+
+R_test = calculate.expected_range(old_range, NIST_ECEF, obs_time_of_week_PRN, week_num, ephem_data, PRN_num)
+print(R_test[40] - R[40])
+
 # plot all results
 # array_of_arrays = np.hstack((np.array([old_range]).T, np.array([expected_range]).T))
 # plot.plot_multiple_arrays(obs_time_of_week_PRN/3600, array_of_arrays, "Time [Hours]", "Range [m]",
@@ -115,4 +119,4 @@ plot.plot_multiple_arrays(obs_time_of_week_PRN/3600, array_of_arrays, "Time [Hou
 
 plot.plot_arrays(obs_time_of_week_PRN/3600, range_diff_with_ephem, "Time [Hours]", "Range [m]",
                  "C1C Pseudorange Minus Expected Range vs Time for PRN"+str(PRN_num))
-plt.show()
+# plt.show()

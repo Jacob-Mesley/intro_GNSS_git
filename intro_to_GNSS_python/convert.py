@@ -243,8 +243,8 @@ def eph2pvt(ephemeris, t_input, prn):
         Satellite ECEF velocity [m/s]
     satClkCorr : ndarray (m,)
         Satellite clock correction [m]
-    junk : int
-        Placeholder (always 0 for now)
+    relCorr : int
+        Relativity clock correction [m]
     tgd : ndarray (m,)
         Group delay [m]
     """
@@ -346,12 +346,15 @@ def eph2pvt(ephemeris, t_input, prn):
         Af0, Af1, Af2 = sat_eph[20:23]
         satClkCorr[tt] = c * ((Af2 * dt + Af1) * dt + Af0)
 
+        # Relativity correction (meters)
+        c = 299792458  # [m/s]
+        delta_t_rel = (-2 / c ** 2) * np.sqrt(a * muE) * ecc * sinE
+
         health[tt] = sat_eph[24]
-        relCorr[tt] = 0
+        relCorr[tt] = delta_t_rel
         tgd[tt] = c * sat_eph[23]  # col 24
 
-    junk = 0
-    return health, satPos, satVel, satClkCorr, junk, tgd
+    return health, satPos, satVel, satClkCorr, relCorr, tgd
 
 
 # def datetime_to_gpsweek_tow(dt):
@@ -379,4 +382,3 @@ def datetime_to_gpsweek_tow(date_time):
         gps_weeks.append(gps_week)
         tows.append(tow)
     return np.array(gps_weeks), np.array(tows)
-

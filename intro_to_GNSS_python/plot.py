@@ -59,7 +59,7 @@ def scatter_arrays(x_data, y_data, x_axis_title="x-axis", y_axis_title="y-axis",
 def subplot_arrays(x_data_array, y_data_matrix, x_axis_label, y_axis_labels, title="plot title"):
     rows, cols = y_data_matrix.shape
     # create the subplots
-    fig, axs = plt.subplots(cols, 1, figsize=(12, 1.5 * cols), sharex=True)
+    fig, axs = plt.subplots(cols, 1, figsize=(12, 2.0 * cols), sharex=True)
     axs = np.atleast_1d(axs)  # ensure axs is iterable even if rows==1
     for i in range(cols):
         axs[i].scatter(x_data_array, y_data_matrix[:, i])

@@ -83,3 +83,89 @@ def az_el_range(user_ECEF, sat_ECEF, only_when_visible=True):
             results[i] = [az, el, rng]
     # return the results matrix when finished calculating all rows
     return results
+
+
+def expected_range(initial_range_array, gnd_pos_ECEF, initial_obs_tow, week_num,
+                   read_clean_BD_ephem_data, PRN_num, only_do_when_visible=True):
+    # constants
+    c = 299792458  # [m/s]
+    omega = 7.2921151467e-5  # [rad/sec] for earth
+    # initialize the loop
+    R = initial_range_array
+    Tr = initial_obs_tow
+    # convert the ground pos into a large array to work inside the loop
+    # gnd_pos_ECEF = [-1288398.567, -4721696.932, 4078625.350]  # provided by prof (in [m])
+    gnd_pos_ECEF_array = np.array(gnd_pos_ECEF)
+    for _ in range(initial_range_array.shape[0] - 1):
+        gnd_pos_ECEF_array = np.vstack((gnd_pos_ECEF_array, gnd_pos_ECEF))
+    for j in range(5):
+        # compute the time of transmission
+        Tt = Tr - (R / c)
+        # compute the new sat pos at new Tt
+        wn_and_Tr = np.hstack((np.array([week_num]).T, np.array([Tt]).T))
+        pvt_data_PRN = convert.eph2pvt(read_clean_BD_ephem_data, wn_and_Tr, PRN_num)
+        ECEF_at_Tt = pvt_data_PRN[1]
+        # rotate the sat position
+        theta = omega * (Tr - Tt)
+        rot_matrix = np.zeros((len(theta), 3, 3))
+        for i in range(len(theta)):
+            rot_matrix[i] = np.array([[np.cos(theta[i]), np.sin(theta[i]), 0],
+                                      [-np.sin(theta[i]), np.cos(theta[i]), 0],
+                                      [0, 0, 1]])
+        ECEF_at_Tr = np.zeros((len(theta), 3))
+        for i in range(len(theta)):
+            ECEF_at_Tr[i] = rot_matrix[i] @ ECEF_at_Tt[i]
+        # compute new range
+        new_az_el_range = az_el_range(gnd_pos_ECEF_array, ECEF_at_Tr, only_do_when_visible)
+        R_new = new_az_el_range[:, 2]
+        # test for convergence (take the difference, and use the max value)
+        diff = np.nanmax(np.abs(R - R_new))
+        if diff <= 1e-8:
+            print("Expected range calculation converged after " + str(j) + " iterations")
+            return R_new
+        else:
+            R = R_new
+    return
+
+
+def tropo_model(zenith_delay, elevation):
+    # to protect against lower elevations blowing up the simplified model
+    min_elev = np.deg2rad(5.0)
+    elevation = np.maximum(elevation, min_elev)
+    # predefine the size of tropoCorr
+    tropoCorr = np.zeros(len(elevation))
+    # calculate a tropoCorr for each elevation
+    for i in range(len(elevation)):
+        tropoCorr[i] = zenith_delay / np.sin(elevation[i])
+    # return entire tropoCorr vector
+    return tropoCorr
+
+
+def iono_corr(range_1, freq_1, range_2, freq_2):
+    # calcuate the iono
+    iono = (freq_2**2 / (freq_1**2 - freq_2**2)) * (range_2 - range_1)
+    # calculate the pif
+    pif = (freq_1**2 / (freq_1**2 - freq_2**2)) * range_1 - (freq_2**2 / (freq_1**2 - freq_2**2)) * range_2
+    # return results
+    return pif, iono
+
+
+def mpath(p_range_1, carrier_freq_1, freq_1, carrier_freq_2, freq_2):
+
+    # calculate multipath
+    c = 299792458  # [m/s]
+    multipath_1 = np.zeros(len(p_range_1))
+    freq_frac_1 = (freq_1 ** 2 + freq_2 ** 2) / (freq_1 ** 2 - freq_2 ** 2)
+    wavelength_1 = c / freq_1
+    freq_frac_2 = (2 * freq_2 ** 2) / (freq_1 ** 2 - freq_2 ** 2)
+    wavelength_2 = c / freq_2
+    for i in range(len(p_range_1)):
+        multipath_1[i] = p_range_1[i] - (freq_frac_1*carrier_freq_1[i]*wavelength_1) + (freq_frac_2*carrier_freq_2[i]*wavelength_2)
+
+    # calculate the code minus carrier
+    code_minus_carrier = np.zeros(len(p_range_1))
+    for i in range(len(p_range_1)):
+        code_minus_carrier[i] = p_range_1[i] - (carrier_freq_1[i]*wavelength_1)
+
+    # return results
+    return multipath_1, code_minus_carrier
