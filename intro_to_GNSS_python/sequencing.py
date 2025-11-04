@@ -120,3 +120,11 @@ def extract_PRN_from_ephem(ephem_data, PRN_num):
     PRN_num = float(PRN_num)
     mask = ephem_data[:, 0].astype(str) == str(PRN_num)
     return ephem_data[mask]
+
+def first_valid_row_in_2d_matrix(matrix):
+    valid_row = 0
+    row_col_value = matrix[valid_row, 0]
+    while np.isnan(row_col_value):
+        valid_row = valid_row + 1
+        row_col_value = matrix[valid_row, 0]
+    return valid_row

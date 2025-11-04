@@ -6,6 +6,7 @@
 # imports
 import numpy as np
 from datetime import datetime, timezone
+import calculate
 
 
 def binary_array_to_hex(bit_array):
@@ -278,7 +279,8 @@ def eph2pvt(ephemeris, t_input, prn):
             continue
         dt_min_index = np.argmin(np.abs(dt_search))
         if np.abs(dt_search[dt_min_index]) > 2 * 3600:
-            print("Warning: Ephemeris expired!")
+            # print("Warning: Ephemeris expired!")
+            pass
 
         sat_eph = sat_eph0[dt_min_index, :]
 
@@ -382,3 +384,12 @@ def datetime_to_gpsweek_tow(date_time):
         gps_weeks.append(gps_week)
         tows.append(tow)
     return np.array(gps_weeks), np.array(tows)
+
+
+def ecef2enu(pos_to_convert_ECEF, ref_pos_ECEF):
+    lat, long, alt = ecef2lla(ref_pos_ECEF)
+    t_matrix = calculate.ECEF2ENU_transformation_matrix(lat, long)
+    ECEF_vector = np.array(pos_to_convert_ECEF)
+    ENU_vector = t_matrix @ ECEF_vector
+    return ENU_vector
+
