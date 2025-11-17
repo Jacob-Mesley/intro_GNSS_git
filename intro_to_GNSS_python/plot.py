@@ -206,11 +206,32 @@ def plot_az_el(az, el, title="plot title", svs=None, ax=None, ):
     # Plot satellite positions
     ax.plot(theta, r, '.k', markersize=4)
 
-    # # Add PRN labels
-    # if svs is not None:
-    #     for i, prn in enumerate(svs):
-    #         if prn != 0:
-    #             ax.text(theta[i], r[i], str(prn), fontsize=8,
-    #                     ha='left', va='center')
-    #
-    #     return ax
+
+def oscope_and_spectrum_analyser(time, signal_values, title="plot title", oscope_xlim_microsec=None, freq_xlim_kHz=None):
+    # do spectrum analyser (do FFT)
+    N = len(time)
+    fs = 1 / (time[1] - time[0])
+    freqs = fs * np.arange(0, N) / N
+    py = 20 * np.log10(np.sqrt(2) * np.abs(np.fft.fft(signal_values) / N) + 1e-12)
+    # create subplot
+    fig, axs = plt.subplots(2, 1, figsize=(10, 6))
+    # plot o-scope
+    axs[0].plot(time*1e6, signal_values)
+    axs[0].set_ylabel("Magnitude [V]")
+    axs[0].set_xlabel("Time [micro-sec]")
+    axs[0].set_title("Magnitude vs Time (Oscilloscope View)")
+    if oscope_xlim_microsec:
+        axs[0].set_xlim(oscope_xlim_microsec)
+    axs[0].grid(True)
+    # plot spectrum analyzer
+    axs[1].plot(freqs/1e3, py)
+    axs[1].set_ylabel("Magnitude [dBW]")
+    axs[1].set_xlabel("Frequency [kHz]")
+    axs[1].set_title("Magnitude vs Frequency (Spectrum Analyzer View, Sampling Rate of "+str(fs/1e6)+" MHz)")
+    if freq_xlim_kHz:
+        axs[1].set_xlim(freq_xlim_kHz)
+    axs[1].grid(True)
+    # finish plot
+    fig.suptitle(title, fontsize=14, fontweight='bold', y=0.98)
+    plt.tight_layout()
+    return fig, axs

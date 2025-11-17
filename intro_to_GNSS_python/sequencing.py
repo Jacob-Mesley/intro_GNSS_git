@@ -42,7 +42,6 @@ def create_CA_code(code_length, PRN_taps_one_indexed):
     G2_taps = [1, 2, 5, 7, 8, 9]  # this is zero index. One indexed would be [2, 3, 6, 8, 9, 10]
     # initialize the CA code length
     CA_code = np.zeros(code_length, dtype=int)
-
     # generate the CA code
     for i in range(code_length):
         # generate the new bit in the CA code
@@ -55,6 +54,25 @@ def create_CA_code(code_length, PRN_taps_one_indexed):
         G2, _ = shift_register_step(G2, G2_taps)
     # return resulting CA code
     return CA_code
+
+
+def create_G1_code(code_length):
+    # Define G1 taps (zero-indexed)
+    G1_taps = [2, 9]  # corresponds to 3 and 10 in one-indexed form
+    # Initialize the G1 register with all 1's
+    G1 = np.ones(10, dtype=int)
+    # Initialize the output code
+    G1_code = np.zeros(code_length, dtype=int)
+
+    for i in range(code_length):
+        # Output bit is the last bit in the register
+        G1_code[i] = G1[-1]
+        # Compute feedback bit (XOR of the tapped bits)
+        feedback = G1[G1_taps[0]] ^ G1[G1_taps[1]]
+        # Shift right and insert feedback bit at the start
+        G1 = np.roll(G1, 1)
+        G1[0] = feedback
+    return G1_code
 
 
 # for comparing the difference between two arrays
