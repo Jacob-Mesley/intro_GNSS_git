@@ -6,7 +6,7 @@
 # imports
 import matplotlib.pyplot as plt
 import numpy as np
-
+import itertools
 
 # simple plotting function given two arrays
 def plot_arrays(x_data, y_data, x_axis_title="x-axis", y_axis_title="y-axis", title="plot title"):
@@ -18,9 +18,6 @@ def plot_arrays(x_data, y_data, x_axis_title="x-axis", y_axis_title="y-axis", ti
     plt.title(title)
     plt.tight_layout()
 
-
-import matplotlib.pyplot as plt
-import itertools
 
 
 def plot_multiple_arrays(x_data, y_data_matrix, x_axis_title="x-axis", y_axis_title="y-axis", title="plot title", labels=None):
@@ -205,6 +202,15 @@ def plot_az_el(az, el, title="plot title", svs=None, ax=None, ):
     theta = np.deg2rad(az)
     # Plot satellite positions
     ax.plot(theta, r, '.k', markersize=4)
+    # Add PRN labels next to each satellite (if svs provided)
+    if svs is not None:
+        for th, rr, prn in zip(theta, r, svs):
+            if prn != 0:
+                # Slight offset so the text doesn't overlap the point
+                ax.text(th, rr + 2, str(prn),
+                        fontsize=8,
+                        ha='center',
+                        va='bottom')
 
 
 def oscope_and_spectrum_analyser(time, signal_values, title="plot title", oscope_xlim_microsec=None, freq_xlim_kHz=None):
@@ -235,3 +241,36 @@ def oscope_and_spectrum_analyser(time, signal_values, title="plot title", oscope
     fig.suptitle(title, fontsize=14, fontweight='bold', y=0.98)
     plt.tight_layout()
     return fig, axs
+
+def complex_corr(DOP_freq_span, delay_span, data, title="3D Correlation Surface", DOP_lims=None, delay_lims=None):
+    # Mesh
+    X, Y = np.meshgrid(DOP_freq_span, delay_span)
+
+    # Figure
+    fig = plt.figure(figsize=(10, 7))
+    ax = fig.add_subplot(111, projection="3d")
+
+    # Surface plot
+    surf = ax.plot_surface(
+        X, Y, data,
+        cmap="viridis",
+        edgecolor="none",
+        linewidth=0,
+        antialiased=True
+    )
+    # axis labels
+    ax.set_xlabel("Doppler Frequency (Hz)")
+    ax.set_ylabel("Code Delay (chips)")
+    ax.set_zlabel("Correlation Magnitude")
+    ax.set_title(title)
+
+    # Axis limits (optional)
+    if DOP_lims is not None:
+        ax.set_xlim(DOP_lims)
+    if delay_lims is not None:
+        ax.set_ylim(delay_lims)
+    # Colorbar
+    fig.colorbar(surf, shrink=0.6, label="Correlation Value")
+    plt.tight_layout()
+
+    return fig, ax

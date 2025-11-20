@@ -8,6 +8,7 @@ import numpy as np
 
 import calculate
 import convert
+import sequencing as seq
 import matplotlib.pyplot as plt
 
 
@@ -363,6 +364,21 @@ def gps_pos_solution(pos_guess_ECEF, obs_data, ephem_data, index_to_calc_solutio
             current_guess_ECEF = new_guess_ECEF
     print("After -> ("+str(maximum_iterations)+") Iterations, the gps solution did not converge")
 
+
+def complex_correlator(signal, DOP_freq, sample_shift, PRN_CA_code_1s, time):
+    # create carrier phase vector
+    IF_freq = 20e3  # [Hz]
+    theta = 2 * np.pi * (IF_freq + DOP_freq) * time
+    # create carrier phase vector and do summation (original code you wrote, but takes forever to run)
+    # IF_freq = 20e3  # [Hz]
+    # theta = 2 * np.pi * (IF_freq + DOP_freq) * time
+    # S = 0
+    # for i in range(len(time)):
+    #     sum_term = signal[i + int(sample_shift)] * PRN_shifted[i] * np.exp(-1j * theta[i])
+    #     S = S + sum_term
+    # vectorized multiply-accumulate (much faster method of doing the same logic above)
+    S = np.sum(signal[int(sample_shift):int(sample_shift) + len(time)] * PRN_CA_code_1s * np.exp(-1j * theta))
+    return S
 
 
 
