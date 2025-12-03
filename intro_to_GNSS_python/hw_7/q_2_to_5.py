@@ -15,11 +15,11 @@ import sequencing as seq
 mat = loadmat("HW7data.mat")
 signal = mat['signal'].flatten()  # 1x4e6 sized matrix containing complex values
 # creating PRN3 C/A code
-# PRN_tap = [4, 8]  # PRN-03
+PRN_tap = [4, 8]  # PRN-03
 # PRN_tap = [3, 8]  # PRN-31
 # PRN_tap = [6, 8]  # PRN-26
-PRN_tap = [9, 10]  # PRN-16
-PRN_num_string = "PRN16"
+# PRN_tap = [9, 10]  # PRN-16
+PRN_num_string = "PRN03"
 PRN_CA_code = seq.create_CA_code(1023, PRN_tap)
 PRN_CA_code_1s = 1 - 2 * PRN_CA_code
 
@@ -47,9 +47,9 @@ for i in range(len(DOP_freq)):
 # QUESTION 3 -----------------------------------------------------------
 
 # do the search for PRN-XX
-generate_data = True
+generate_data = False
 file_name = "complex_corr_2ms_"+PRN_num_string+".npy"
-delay_span = np.arange(1000, 2000, 1)  # 8185
+delay_span = np.arange(0, 1023, 0.5)  # 8185
 DOP_freq_span = np.arange(0, 10500, 500)
 if generate_data:
     data = np.zeros((len(delay_span), len(DOP_freq_span)))
@@ -69,6 +69,8 @@ if max_val != 0:
 else:
     data_norm = data
 
+# convert code shift to actual chip shift
+delay_span = delay_span * (chip_rate/samp_freq)
 # find index of maximum value
 max_idx = np.unravel_index(np.argmax(data), data.shape)
 max_code_shift = delay_span[max_idx[0]]
