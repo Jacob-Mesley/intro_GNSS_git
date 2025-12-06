@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 # gps_data.to_netcdf("obs_data_NIST.nc")
 
 # loading in the data ------------------------------------------
-obs_data = xr.load_dataset("obs_data_NIST.nc")
+obs_data = xr.load_dataset("obs_data_MYST.nc")
 # read in the broadcast ephem data
 ephem_data, _ = file.read_clean_GPSbroadcast("brdc2570.25n")
 
