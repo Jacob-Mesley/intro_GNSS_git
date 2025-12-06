@@ -214,7 +214,6 @@ def range_corrs(PRN_num_int, user_ECEF, obs_file_data, ephem_file_data, index_in
     if np.isnan(iono_free_range):
         return None
 
-
     # get the PVT data --------------------------------
     pvt_data = convert.eph2pvt(ephem_file_data, obs_wn_tow_PRN, PRN_num_int)
     sat_pos_ECEF = pvt_data[1]
@@ -275,8 +274,16 @@ def gps_pos_solution(pos_guess_ECEF, obs_data, ephem_data, index_to_calc_solutio
     # also store pvt data
     PRN_nums = []
     ECEF_sat_positions = []
+    sv_list = obs_data.C1C.sv.values.tolist()
     # exclude PRN 32, because of it's weird offset issue with the specific data
-    for i in range(1, 32):
+    for i in range(1, 33):
+        prn_string = "G"+str(i)
+        if i < 10:
+            prn_string = "G0"+str(i)
+        # if the obs file has the prn in its dataset
+        if prn_string not in sv_list:
+            # print(prn_string + " was excluded")
+            continue
         pvt_data = convert.eph2pvt(ephem_data, obs_wn_tow_PRN, i)
         ECEF_pos = np.array(pvt_data[1])
         temp = np.array([current_guess_ECEF])
@@ -288,14 +295,13 @@ def gps_pos_solution(pos_guess_ECEF, obs_data, ephem_data, index_to_calc_solutio
             ECEF_pos = ECEF_pos.flatten()
             ECEF_sat_positions.append(ECEF_pos)
     number_of_PRNs = len(PRN_nums)
-
     # enforce minimum sat visible
     if number_of_PRNs < min_sats_visible:
         return
     # loop through iterations
     for j in range(maximum_iterations):
         # calculate all the data
-        range_corrs_all = np.zeros((number_of_PRNs, len(obs_data.C1C.sel(sv="G01").values), 7))
+        range_corrs_all = np.zeros((number_of_PRNs, 1, 7))
         for PRN_num_in_array in range(number_of_PRNs):
             PRN_num = PRN_nums[PRN_num_in_array]
             corrs = range_corrs(PRN_num, current_guess_ECEF, obs_data, ephem_data, index)
@@ -333,13 +339,15 @@ def gps_pos_solution(pos_guess_ECEF, obs_data, ephem_data, index_to_calc_solutio
         iterations = iterations+1
         state_vector_corr_mag = np.linalg.norm(x_hat[0:3])
         if do_output:
-            decimals = 2
-            print("----------- Iteration: "+str(j+1)+" -----------")
+            decimals = 1
+            print("\n----------- Iteration: "+str(j+1)+" -----------")
             print("State Deviation (x_hat) [m] -> "+str(np.round(x_hat.T.flatten(), decimals)))
             print("State Deviation (x_hat) Magnitude [m] -> "+str(np.round(state_vector_corr_mag, 4)))
             print("Updated State Estimate ECEF [m] -> "+str(np.round(new_guess_ECEF, decimals)))
+            print("Updated Clock Bias [m] -> "+str(np.round(x_hat[3], decimals)))
 
-        if state_vector_corr_mag < 0.01:  # only stop iteration once deviation is below 1 cm (ie, 0.01 meters)
+        # if state_vector_corr_mag < 0.01:  # only stop iteration once deviation is below 1 cm (ie, 0.01 meters)
+        if iterations == 5: # stop after 5 iterations (imposed by the final exam, but can change at any time)
             # set the final solution
             final_sol = new_guess_ECEF
             # calc final post fit resids
